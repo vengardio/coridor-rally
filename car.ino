@@ -9,20 +9,26 @@ Servo servo, motor;
 #define SERVO_ZERO 80
 #define KP1 0.24  //#define KP1 0.1
 #define KP2 0.27  //#define KP2 0.27 !!!!!
-#define KI 0      //#define KI 0
+//#define KI 0      //#define KI 0
 #define KD1 0.2   //#define KD1 0.35
 #define KD2 0.15  //#define KD2 0.1 !!!!!
 
-uint8_t US_PIN[][2] = { { 4, 5 }, { 10, 11 }, { 6, 7 } };  //L -- M -- R ;;; TRIG -- ECHO
+uint8_t US_PIN[][2] = {
+  { 4, 5 }, { 10, 11 }, { 6, 7 }
+};  //L -- M -- R ;;; TRIG -- ECHO
 uint16_t cm[3];
-uint16_t prevcm[][3] = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+uint16_t prevcm[][3] = {
+  { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }
+};
 uint16_t averange[3];
 float integral, PIDHAHA;
 int16_t err, prevErr;
 long prevTime, prevTimeLiners;
 uint8_t dt, lineCount;
-bool lines[][2] = { { 0, 0 }, { 0, 0 }, { 0, 0 } };   // L -- F -- R ;;; PREVIOUS -- NOW 
-
+bool lines[][2] = {
+  { 0, 0 }, { 0, 0 }, { 0, 0 }
+};  // L -- F -- R ;;; PREVIOUS -- NOW
+long StartTime = 0;
 
 
 void setup() {
@@ -45,6 +51,7 @@ void setup() {
   motor.write(90);
   delay(2100);
   motor.write(90);
+  StartTime = millis();
 }
 
 void loop() {
@@ -66,29 +73,16 @@ void loop() {
   }
 
   //===Liner's analog values to boolean===
-  if (analogRead(A0) <= 980) lines[0][1] = true;   //===Left pin===
-  if (analogRead(A1) <= 966) lines[1][1] = true;   //===Back pin===
-  if (analogRead(A2) <= 942) lines[2][1] = true;   //===Right pin===
-  if (analogRead(A0) > 985) lines[0][1] = false; 
-  if (analogRead(A1) > 971) lines[1][1] = false;
-  if (analogRead(A2) > 947) lines[2][1] = false;
-
-  //счётчик линий
-  if (!lines[1][0] and lines[1][1]) {
-    if ((millis() - prevTimeLiners) > 500 and lineCount != 4) {
-      lineCount = 1;  //обнуление счётчика. Давно не было линий, считаем заново.
-    } else {
-      lineCount++;
-      if (lineCount == 4) {
-        delay(50);  //важен делей, а не миллис. Машинка за это время должна уже задним датчиком коснуться четвёртой линии (не стоп линии)
-      }
-    }
-    prevTimeLiners = millis();
-  }
+  if (analogRead(A0) >= 1013) lines[0][1] = true;  //===Left pin===
+  if (analogRead(A1) >= 999) lines[1][1] = true;   //===Back pin===
+  if (analogRead(A2) >= 1010) lines[2][1] = true;  //===Right pin===
+  if (analogRead(A0) < 1009) lines[0][1] = false;
+  if (analogRead(A1) < 993) lines[1][1] = false;
+  if (analogRead(A2) < 1007) lines[2][1] = false;
 
   //===PID Regulator===
   dt = millis() - prevTime;
-  integral += err * dt;
+  //integral += err * dt;
   err = averange[2] - averange[0];
   if (averange[1] >= 50) PIDHAHA = err * KP1 + (err - prevErr) / dt * KD1;
   if (averange[1] < 50) PIDHAHA = err * KP2 + (err - prevErr) / dt * KD2;
@@ -98,31 +92,88 @@ void loop() {
   if (PIDHAHA < -20) PIDHAHA = -20;
 
   //===Serial printing===
-  Serial.print("DT: "); Serial.print(dt);
+  //Serial.print("DT: ");
+  //Serial.print(dt);
   Serial.print(" Lines: ");
-  Serial.print(analogRead(A0)); Serial.print(" - ");
-  Serial.print(analogRead(A1)); Serial.print(" - ");
-  Serial.print(analogRead(A2)); Serial.print(" ==bool== ");
-  Serial.print(lines[0][1]); Serial.print(" - ");
-  Serial.print(lines[1][1]); Serial.print(" - ");
-  Serial.println(lines[2][1]);
+  Serial.print(analogRead(A0));
+  Serial.print(" - ");
+  Serial.print(analogRead(A1));
+  Serial.print(" - ");
+  Serial.print(analogRead(A2));
+  Serial.print(" ==bool== ");
+  Serial.print(lines[0][1]);
+  Serial.print(" - ");
+  Serial.print(lines[1][1]);
+  Serial.print(" - ");
+  Serial.print(lines[2][1]);
+  Serial.print(" ==lineCount== ");
+  Serial.println(lineCount);
+
 
   //===switching the line-crossing===x
-  switch () {
-    case 1: //===we crossed 1 line resently===
-    case 2: //===we crossed 1 line resently===
-    case 3: //===we crossed 1 line resently===
-    case 4: //===we crossed 1 line resently===
-    default: //===we catched error, don't worry===
-       servo.write(SERVO_ZERO + PIDHAHA);
-       motor.write(98);
+  if (lineCount == 0 or lineCount == 1) {  //===nothing===
+    servo.write(SERVO_ZERO + PIDHAHA);
+    //motor.write(97);
+    if (millis() - StartTime <= 1000) {
+      motor.write(100);
+    } else if ((millis() - StartTime) > 1000 and (millis() - StartTime) < 8000) {
+      motor.write(98);
+    } else {
+      motor.write(97);
+    }
+  }
+  if (lineCount == 2) {  //===stones===
+    servo.write(SERVO_ZERO);
+    motor.write(97);
+    delay(200);
+    motor.write(96);
+    delay(700);
+    motor.write(90);
+    delay(8000);
+  }
+  if (lineCount == 999) {  //===no walls===
+    if (lines[0][1] and !lines[2][1]) servo.write(SERVO_ZERO + 15);
+    if (!lines[0][1] and lines[2][1]) servo.write(SERVO_ZERO - 15);
+    if (lines[0][1] and lines[2][1]) servo.write(SERVO_ZERO);
+    motor.write(97);
+  }
+  if (lineCount == 4) {  //===stop-line===
+    servo.write(SERVO_ZERO + PIDHAHA);
+    // if (lines[0][1] and lines[1][1]) {
+    delay(300);
+    motor.write(90);
+    delay(8000);
+    motor.write(98);
+    lineCount = 0;
+    // }
+  }
+  if (lineCount > 4) {  //===we catched error, don't worry===
+    servo.write(SERVO_ZERO + PIDHAHA);
+    motor.write(98);
+  }
+
+  //счётчик линий
+  if (millis() - StartTime > 6000) {
+    if (!lines[1][0] and lines[1][1]) {
+      if ((millis() - prevTimeLiners) > 400 and lineCount != 4) {
+        lineCount = 1;  //обнуление счётчика. Давно не было линий, считаем заново.
+      } else {
+        lineCount++;
+        if (lineCount == 4) {
+          delay(50);  //важен делей, а не миллис. Машинка за это время должна уже задним датчиком коснуться четвёртой линии (не стоп линии)
+        }
+      }
+      prevTimeLiners = millis();
+    }
+  } else {
+    lineCount = 1;
   }
 
   //===Rotation===
-  servo.write(SERVO_ZERO + PIDHAHA);
+  //servo.write(SERVO_ZERO + PIDHAHA);
 
   //===previous values===
-  for (int i = 0; i<3; i++) {
+  for (int i = 0; i < 3; i++) {
     lines[i][0] = lines[i][1];
   }
   prevTime = millis();
