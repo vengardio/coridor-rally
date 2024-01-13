@@ -23,12 +23,12 @@ uint16_t prevcm[][3] = {
 uint16_t averange[3];
 float integral, PIDHAHA;
 int16_t err, prevErr;
-long prevTime, prevTimeLiners;
-uint8_t dt, lineCount;
+long prevTime, prevTimeLiners, StartTime;
+uint8_t dt;
+uint8_t lineCount = 0;
 bool lines[][2] = {
   { 0, 0 }, { 0, 0 }, { 0, 0 }
 };  // L -- F -- R ;;; PREVIOUS -- NOW
-long StartTime = 0;
 
 
 void setup() {
@@ -92,8 +92,8 @@ void loop() {
   if (PIDHAHA < -20) PIDHAHA = -20;
 
   //===Serial printing===
-  //Serial.print("DT: ");
-  //Serial.print(dt);
+  /*Serial.print("DT: ");
+  Serial.print(dt);
   Serial.print(" Lines: ");
   Serial.print(analogRead(A0));
   Serial.print(" - ");
@@ -108,44 +108,35 @@ void loop() {
   Serial.print(lines[2][1]);
   Serial.print(" ==lineCount== ");
   Serial.println(lineCount);
+  */
 
-
-  //===switching the line-crossing===x
-  if (lineCount == 0 or lineCount == 1) {  //===nothing===
+  //===switching the line-crossing===
+  if (lineCount <= 2) {  //===just way or stones. No reason to up car's speed, because stones are small===
     servo.write(SERVO_ZERO + PIDHAHA);
-    //motor.write(97);
     if (millis() - StartTime <= 1000) {
       motor.write(100);
-    } else if ((millis() - StartTime) > 1000 and (millis() - StartTime) < 8000) {
-      motor.write(98);
     } else {
-      motor.write(97);
+      motor.write(98);
     }
   }
-  if (lineCount == 2) {  //===stones===
-    servo.write(SERVO_ZERO);
-    motor.write(97);
-    delay(200);
-    motor.write(96);
-    delay(700);
-    motor.write(90);
-    delay(8000);
-  }
-  if (lineCount == 999) {  //===no walls===
+  if (lineCount == 3) {  //===no walls===
     if (lines[0][1] and !lines[2][1]) servo.write(SERVO_ZERO + 15);
     if (!lines[0][1] and lines[2][1]) servo.write(SERVO_ZERO - 15);
     if (lines[0][1] and lines[2][1]) servo.write(SERVO_ZERO);
-    motor.write(97);
+    motor.write(98);
   }
   if (lineCount == 4) {  //===stop-line===
     servo.write(SERVO_ZERO + PIDHAHA);
-    // if (lines[0][1] and lines[1][1]) {
+    /*if (lines[0][1] and lines[1][1]) {
+      motor.write(90);
+      delay(4000);
+      motor.write(98);
+    }*/
     delay(300);
     motor.write(90);
     delay(8000);
     motor.write(98);
     lineCount = 0;
-    // }
   }
   if (lineCount > 4) {  //===we catched error, don't worry===
     servo.write(SERVO_ZERO + PIDHAHA);
@@ -153,21 +144,18 @@ void loop() {
   }
 
   //счётчик линий
-  if (millis() - StartTime > 6000) {
-    if (!lines[1][0] and lines[1][1]) {
-      if ((millis() - prevTimeLiners) > 400 and lineCount != 4) {
-        lineCount = 1;  //обнуление счётчика. Давно не было линий, считаем заново.
-      } else {
-        lineCount++;
-        if (lineCount == 4) {
-          delay(50);  //важен делей, а не миллис. Машинка за это время должна уже задним датчиком коснуться четвёртой линии (не стоп линии)
-        }
+  if (!lines[1][0] and lines[1][1]) {
+    if ((millis() - prevTimeLiners) > 400 and lineCount != 4) {
+      lineCount = 1;  //обнуление счётчика. Давно не было линий, считаем заново.
+    } else {
+      lineCount++;
+      if (lineCount == 4) {
+        delay(50);  //важен делей, а не миллис. Машинка за это время должна уже задним датчиком коснуться четвёртой линии (не стоп линии)
       }
-      prevTimeLiners = millis();
     }
-  } else {
-    lineCount = 1;
+    prevTimeLiners = millis();
   }
+
 
   //===Rotation===
   //servo.write(SERVO_ZERO + PIDHAHA);
