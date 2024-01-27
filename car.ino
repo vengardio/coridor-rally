@@ -7,10 +7,10 @@ Servo servo, motor;
 
 //===constants===
 #define SERVO_ZERO 80
-#define KP1 0.24  //#define KP1 0.1
+#define KP1 0.15  //#define KP1 0.1
 #define KP2 0.27  //#define KP2 0.27 !!!!!
 //#define KI 0      //#define KI 0
-#define KD1 0.2   //#define KD1 0.35
+#define KD1 0.30   //#define KD1 0.35
 #define KD2 0.15  //#define KD2 0.1 !!!!!
 
 uint8_t US_PIN[][2] = {
