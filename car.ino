@@ -5,6 +5,9 @@ Servo servo, motor;
 #define ESC 9
 #define SERVO 3
 
+//===constants===
+#define SERVO_ZERO 80
+
 uint8_t US_PIN[][2] = {
   { 4, 5 }, { 10, 11 }, { 6, 7 }
 };  //L -- M -- R ;;; TRIG -- ECHO
