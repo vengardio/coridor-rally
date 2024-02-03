@@ -5,14 +5,6 @@ Servo servo, motor;
 #define ESC 9
 #define SERVO 3
 
-//===constants===
-#define SERVO_ZERO 80
-#define KP1 0.15  //#define KP1 0.1
-#define KP2 0.27  //#define KP2 0.27 !!!!!
-//#define KI 0      //#define KI 0
-#define KD1 0.30   //#define KD1 0.35
-#define KD2 0.15  //#define KD2 0.1 !!!!!
-
 uint8_t US_PIN[][2] = {
   { 4, 5 }, { 10, 11 }, { 6, 7 }
 };  //L -- M -- R ;;; TRIG -- ECHO
@@ -29,10 +21,12 @@ uint8_t lineCount = 0;
 bool lines[][2] = {
   { 0, 0 }, { 0, 0 }, { 0, 0 }
 };  // L -- F -- R ;;; PREVIOUS -- NOW
+float PIDKs[] = {0.15, 0.30, 0.27, 0.15}; //kp1 kd1 kp2 kd2
 
 
 void setup() {
   Serial.begin(9600);
+  //Serial.setTimeout(5000);
 
   //===ultrasonics attaching===
   for (int i = 0; i < 3; i++) {
@@ -55,6 +49,22 @@ void setup() {
 }
 
 void loop() {
+  //===PID's K's update from Serial===
+  if (Serial.available() > 0) {
+    if (Serial.parseFloat() != 0.0) {
+      PIDKs[0] =  Serial.parseFloat();
+      PIDKs[1] = Serial.parseFloat();
+      PIDKs[2] = Serial.parseFloat();
+      PIDKs[3] = Serial.parseFloat();
+    }
+  }
+  Serial.print("PIDKs: ");
+  for (byte i = 0; i < 4; ++i) {
+    Serial.print(PIDKs[i]);
+    Serial.print(", ");
+  }
+  Serial.println();
+  
   for (int i = 0; i < 3; i++) {
     //===rangefinder find===
     digitalWrite(US_PIN[i][0], LOW);
@@ -84,8 +94,8 @@ void loop() {
   dt = millis() - prevTime;
   //integral += err * dt;
   err = averange[2] - averange[0];
-  if (averange[1] >= 50) PIDHAHA = err * KP1 + (err - prevErr) / dt * KD1;
-  if (averange[1] < 50) PIDHAHA = err * KP2 + (err - prevErr) / dt * KD2;
+  if (averange[1] >= 50) PIDHAHA = err * PIDKs[0] + (err - prevErr) / dt * PIDKs[1];
+  if (averange[1] < 50) PIDHAHA = err * PIDKs[2] + (err - prevErr) / dt * PIDKs[3];
 
   //===PID filter===
   if (PIDHAHA >= 20) PIDHAHA = 20;
