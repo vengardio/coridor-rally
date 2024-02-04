@@ -24,7 +24,7 @@ uint8_t lineCount = 0;
 bool lines[][2] = {
   { 0, 0 }, { 0, 0 }, { 0, 0 }
 };  // L -- F -- R ;;; PREVIOUS -- NOW
-float PIDKs[] = {0.15, 0.30, 0.27, 0.15}; //kp1 kd1 kp2 kd2
+float PIDKs[] = {0.20, 0.30, 0.4, 0.15}; //kp1 kd1 kp2 kd2
 
 
 void setup() {
