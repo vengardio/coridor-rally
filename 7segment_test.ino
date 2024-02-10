@@ -7,7 +7,7 @@
 #define g 11
 long mytime = millis();
 long prevtime = millis();
-int i = 0;
+int number[] = { 0, 0, 0, 0 };
 
 void setup() {
   Serial.begin(9600);
@@ -24,6 +24,7 @@ void setup() {
   pinMode(11, OUTPUT);
   pinMode(12, OUTPUT);
 }
+/*
 void loop() {
   mytime = millis();
   digitalWrite(A1, LOW);
@@ -59,6 +60,59 @@ void loop() {
     }
   }
 }
+*/
+
+void loop() {
+  mytime = millis();
+  digitalWrite(A1, LOW);
+  digitalWrite(A2, HIGH);
+  digitalWrite(A3, HIGH);
+  digitalWrite(A4, HIGH);
+  run(number[0]);
+  delay(4);
+  digitalWrite(A1, HIGH);
+  digitalWrite(A2, LOW);
+  digitalWrite(A3, HIGH);
+  digitalWrite(A4, HIGH);
+  run(number[1]);
+  delay(4);
+  digitalWrite(A1, HIGH);
+  digitalWrite(A2, HIGH);
+  digitalWrite(A3, LOW);
+  digitalWrite(A4, HIGH);
+  run(number[2]);
+  delay(4);
+  digitalWrite(A1, HIGH);
+  digitalWrite(A2, HIGH);
+  digitalWrite(A3, HIGH);
+  digitalWrite(A4, LOW);
+  run(number[3]);
+  delay(4);
+  if (mytime - prevtime > 1000) {
+    prevtime = mytime;
+    number[3] = number[3] + 1;
+    if (number[3] == 10) {
+      number[3] = 0;
+      number[2] = number[2] + 1;
+      if (number[2] == 6) {
+        number[2] = 0;
+        number[1] = number[1] + 1;
+        if (number[1] == 10) {
+          number[1] = 0;
+          number[0] = number[0] + 1;
+          if (number[0] == 6) {
+            number[0] = 0;
+            number[1] = 0;
+            number[2] = 0;
+            number[3] = 0;
+          }
+        }
+      }
+    }
+  }
+}
+
+
 
 void run(int i) {
   switch (i) {
@@ -101,7 +155,6 @@ void run(int i) {
     case 12:
       two();
       break;
-
   }
 }
 
