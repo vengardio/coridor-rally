@@ -22,7 +22,7 @@ uint8_t lineCount = 0;
 bool lines[][2] = {
   { 0, 0 }, { 0, 0 }, { 0, 0 }  // L -- F -- R ;;; PREVIOUS -- NOW
 };  
-float PIDKs[] = {0.18, 0.35, 0.4, 0.15}; //KP1 -- KD1 -- KP2 -- KD2
+float PIDKs[] = {0.15, 0.3, 0.4, 0.15}; //KP1 -- KD1 -- KP2 -- KD2
 float PIDHAHA;
 long prevTime, prevTimeLiners, StartTime;
 
