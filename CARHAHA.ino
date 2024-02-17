@@ -22,7 +22,7 @@ uint8_t lineCount = 0;
 bool lines[][2] = {
   { 0, 0 }, { 0, 0 }, { 0, 0 }  // L -- F -- R ;;; PREVIOUS -- NOW
 };  
-float PIDKs[] = {0.15, 0.30, 0.4, 0.15}; //KP1 -- KD1 -- KP2 -- KD2
+float PIDKs[] = {0.18, 0.35, 0.4, 0.15}; //KP1 -- KD1 -- KP2 -- KD2
 float PIDHAHA;
 long prevTime, prevTimeLiners, StartTime;
 
@@ -86,10 +86,12 @@ void loop() {
 
   //===there's wall in front===
   if (averange[1] <= 40) {
-    motor.write(70);
+    motor.write(75);
     PIDHAHA = -1 * PIDHAHA;
+    servo.write(SERVO_ZERO + PIDHAHA);
     delay(600);
     PIDHAHA = -1 * PIDHAHA;
+    StartTime = millis();
   }
   
   //===PID filter===
@@ -99,8 +101,8 @@ void loop() {
   //===switching the line-crossing===
   if (lineCount <= 2) {  //===just way or stones. No reason to up car's speed, because stones are small===
     servo.write(SERVO_ZERO + PIDHAHA);
-    if (millis() - StartTime <= 1000) {
-      motor.write(100);
+    if (millis() - StartTime <= 600) {
+      motor.write(101);
     } else {
       motor.write(98);
     }
