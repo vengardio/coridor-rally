@@ -7,6 +7,8 @@ Servo servo, motor;
 
 //===constants===
 #define SERVO_ZERO 80
+#define RANGECHANGEPID 20
+#define RANGEBACK 45
 
 uint8_t US_PIN[][2] = {
   { 4, 5 }, { 10, 11 }, { 6, 7 } //L -- M -- R ;;; TRIG -- ECHO
@@ -22,13 +24,11 @@ uint8_t lineCount = 0;
 bool lines[][2] = {
   { 0, 0 }, { 0, 0 }, { 0, 0 }  // L -- F -- R ;;; PREVIOUS -- NOW
 };  
-float PIDKs[] = {0.15, 0.30, 0.4, 0.15}; //KP1 -- KD1 -- KP2 -- KD2
+float PIDKs[] = {0.15, 0.25, 0.35, 0.05}; //KP1 -- KD1 -- KP2 -- KD2
 float PIDHAHA;
 long prevTime, prevTimeLiners, StartTime;
 
 void setup() {
-  Serial.begin(9600);
-
   //===ultrasonics attaching===
   for (int i = 0; i < 3; i++) {
     pinMode(US_PIN[i][0], OUTPUT);
@@ -55,22 +55,6 @@ void setup() {
 }
 
 void loop() {
-  //===PID's K's update from Serial===
-  if (Serial.available() > 0) {
-    if (Serial.parseFloat() != 0.0) {
-      PIDKs[0] =  Serial.parseFloat();
-      PIDKs[1] = Serial.parseFloat();
-      PIDKs[2] = Serial.parseFloat();
-      PIDKs[3] = Serial.parseFloat();
-    }
-  }
-  Serial.print("PIDKs: ");
-  for (byte i = 0; i < 4; ++i) {
-    Serial.print(PIDKs[i]);
-    Serial.print(", ");
-  }
-  Serial.println();
-
   for (int i = 0; i < 3; i++) {
     //===rangefinder find===
     digitalWrite(US_PIN[i][0], LOW);
@@ -99,15 +83,17 @@ void loop() {
   //===PID Regulator===
   dt = millis() - prevTime;
   err = averange[2] - averange[0];
-  if (averange[1] >= 50) PIDHAHA = err * PIDKs[0] + (err - prevErr) / dt * PIDKs[1];
-  if (averange[1] < 50) PIDHAHA = err * PIDKs[2] + (err - prevErr) / dt * PIDKs[3];
+  if (averange[1] >= RANGECHANGEPID) PIDHAHA = err * PIDKs[0] + (err - prevErr) / dt * PIDKs[1];
+  if (averange[1] < RANGECHANGEPID) PIDHAHA = err * PIDKs[2] + (err - prevErr) / dt * PIDKs[3];
 
   //===there's wall in front===
-  if (averange[1] <= 40) {
-    motor.write(70);
+  if (averange[1] <= RANGEBACK) {
+    motor.write(75);
     PIDHAHA = -1 * PIDHAHA;
-    delay(600);
+    servo.write(SERVO_ZERO + PIDHAHA);
+    delay(700);
     PIDHAHA = -1 * PIDHAHA;
+    StartTime = millis();
   }
   
   //===PID filter===
@@ -117,8 +103,8 @@ void loop() {
   //===switching the line-crossing===
   if (lineCount <= 2) {  //===just way or stones. No reason to up car's speed, because stones are small===
     servo.write(SERVO_ZERO + PIDHAHA);
-    if (millis() - StartTime <= 1000) {
-      motor.write(100);
+    if (millis() - StartTime <= 400) {
+      motor.write(102);
     } else {
       motor.write(98);
     }
@@ -143,29 +129,7 @@ void loop() {
     servo.write(SERVO_ZERO + PIDHAHA);
     motor.write(98);
   }
-
-  //===Rotation===
-  //servo.write(SERVO_ZERO + PIDHAHA);
-
-  //===Serial printing===
-  Serial.print("DT: ");
-  Serial.print(dt);
-  Serial.print(" Lines: ");
-  Serial.print(analogRead(A0));
-  Serial.print(" - ");
-  Serial.print(analogRead(A1));
-  Serial.print(" - ");
-  Serial.print(analogRead(A2));
-  Serial.print(" ==bool== ");
-  Serial.print(lines[0][1]);
-  Serial.print(" - ");
-  Serial.print(lines[1][1]);
-  Serial.print(" - ");
-  Serial.print(lines[2][1]);
-  Serial.print(" ==lineCount== ");
-  Serial.println(lineCount);
-  
-
+/*
   //счётчик линий
   if (!lines[1][0] and lines[1][1]) {
     if ((millis() - prevTimeLiners) > 400 and lineCount != 4) {
@@ -178,7 +142,7 @@ void loop() {
     }
     prevTimeLiners = millis();
   }
-  
+  */
   //===previous values===
   for (int i = 0; i < 3; i++) {
     lines[i][0] = lines[i][1];
