@@ -9,7 +9,7 @@ Servo servo, motor;
 #define SERVO_ZERO 80
 
 uint8_t US_PIN[][2] = {
-  { 4, 5 }, { 10, 11 }, { 6, 7 } //L -- M -- R ;;; TRIG -- ECHO
+  { 4, 5 }, { 10, 11 }, { 6, 7 }  //L -- M -- R ;;; TRIG -- ECHO
 };
 uint16_t cm[3];
 uint16_t prevcm[][3] = {
@@ -21,8 +21,8 @@ uint8_t dt;
 uint8_t lineCount = 0;
 bool lines[][2] = {
   { 0, 0 }, { 0, 0 }, { 0, 0 }  // L -- F -- R ;;; PREVIOUS -- NOW
-};  
-float PIDKs[] = {0.17, 0.26, 0.4, 0.15}; //KP1 -- KD1 -- KP2 -- KD2
+};
+float PIDKs[] = { 0.17, 0.26, 0.4, 0.15 };  //KP1 -- KD1 -- KP2 -- KD2
 float PIDHAHA;
 long prevTime, prevTimeLiners, StartTime, PrevNoWallsTime;
 
@@ -74,14 +74,11 @@ void loop() {
 
   //===Liner's analog values to boolean===
   if (analogRead(A1) >= 970) lines[0][1] = true;  //===Left pin===
-  if (analogRead(A2) >= 970) lines[1][1] = true;   //===Back pin===
+  if (analogRead(A2) >= 970) lines[1][1] = true;  //===Back pin===
   if (analogRead(A0) >= 970) lines[2][1] = true;  //===Right pin===
   if (analogRead(A1) < 970) lines[0][1] = false;
   if (analogRead(A2) < 970) lines[1][1] = false;
   if (analogRead(A0) < 970) lines[2][1] = false;
-  Serial.print(lineCount); Serial.print(" Left: "); Serial.print(analogRead(A1)); Serial.print(" -> "); Serial.print(lines[0][1]);
-  Serial.print(" Right: "); Serial.print(analogRead(A0)); Serial.print(" -> "); Serial.print(lines[2][1]);
-  Serial.print(" Back: "); Serial.print(analogRead(A2)); Serial.print(" -> "); Serial.println(lines[1][1]);
 
   //===PID Regulator===
   dt = millis() - prevTime;
@@ -98,12 +95,11 @@ void loop() {
     PIDHAHA = -1 * PIDHAHA;
     StartTime = millis();
   }
-  
+
   //===PID filter===
   if (PIDHAHA >= 20) PIDHAHA = 20;
   if (PIDHAHA < -20) PIDHAHA = -20;
-  lineCount = 3; //delete
-  PrevNoWallsTime = millis(); //delete
+
   //===switching the line-crossing===
   if (lineCount <= 2) {  //===just way or stones. No reason to up car's speed, because stones are small===
     servo.write(SERVO_ZERO + PIDHAHA);
@@ -114,15 +110,15 @@ void loop() {
     }
   }
   if (lineCount == 3) {  //===no walls===
-  if (millis() - PrevNoWallsTime <= 7000) {
-    if (lines[0][1] and !lines[2][1]) servo.write(SERVO_ZERO - 15);
-    if (!lines[0][1] and lines[2][1]) servo.write(SERVO_ZERO + 15);
-    if (lines[0][1] and lines[2][1]) servo.write(SERVO_ZERO);
-    if (!lines[0][1] and !lines[2][1]) servo.write(SERVO_ZERO);
-  } 
-  if (millis() - PrevNoWallsTime > 7000) {
-    lineCount = 0;
-  }
+    if (millis() - PrevNoWallsTime <= 7000) {
+      if (lines[0][1] and !lines[2][1]) servo.write(SERVO_ZERO - 15);
+      if (!lines[0][1] and lines[2][1]) servo.write(SERVO_ZERO + 15);
+      if (lines[0][1] and lines[2][1]) servo.write(SERVO_ZERO);
+      if (!lines[0][1] and !lines[2][1]) servo.write(SERVO_ZERO);
+    }
+    if (millis() - PrevNoWallsTime > 7000) {
+      lineCount = 0;
+    }
     motor.write(98);
   }
   if (lineCount == 4) {  //===stop-line===
@@ -133,13 +129,14 @@ void loop() {
       motor.write(90);
       delay(4000);
       motor.write(98);
+      lineCount = 0;
     }
   }
   if (lineCount > 4) {  //===we catched error, don't worry===
     servo.write(SERVO_ZERO + PIDHAHA);
     motor.write(98);
   }
-/*
+
   //счётчик линий
   if (!lines[0][0] and lines[0][1]) {
     if ((millis() - prevTimeLiners) > 400 and lineCount != 4) {
@@ -155,7 +152,8 @@ void loop() {
     }
     prevTimeLiners = millis();
   }
-  */
+  Serial.println(lineCount);
+
   //===previous values===
   for (int i = 0; i < 3; i++) {
     lines[i][0] = lines[i][1];
