@@ -24,9 +24,10 @@ bool lines[][2] = {
 };  
 float PIDKs[] = {0.17, 0.26, 0.4, 0.15}; //KP1 -- KD1 -- KP2 -- KD2
 float PIDHAHA;
-long prevTime, prevTimeLiners, StartTime;
+long prevTime, prevTimeLiners, StartTime, PrevNoWallsTime;
 
 void setup() {
+  Serial.begin(9600);
   //===ultrasonics attaching===
   for (int i = 0; i < 3; i++) {
     pinMode(US_PIN[i][0], OUTPUT);
@@ -50,6 +51,7 @@ void setup() {
   delay(3000);
 
   StartTime = millis();
+  PrevNoWallsTime = millis();
 }
 
 void loop() {
@@ -71,12 +73,15 @@ void loop() {
   }
 
   //===Liner's analog values to boolean===
-  if (analogRead(A0) >= 1013) lines[0][1] = true;  //===Left pin===
-  if (analogRead(A1) >= 999) lines[1][1] = true;   //===Back pin===
-  if (analogRead(A2) >= 1010) lines[2][1] = true;  //===Right pin===
-  if (analogRead(A0) < 1009) lines[0][1] = false;
-  if (analogRead(A1) < 993) lines[1][1] = false;
-  if (analogRead(A2) < 1007) lines[2][1] = false;
+  if (analogRead(A1) >= 970) lines[0][1] = true;  //===Left pin===
+  if (analogRead(A2) >= 970) lines[1][1] = true;   //===Back pin===
+  if (analogRead(A0) >= 970) lines[2][1] = true;  //===Right pin===
+  if (analogRead(A1) < 970) lines[0][1] = false;
+  if (analogRead(A2) < 970) lines[1][1] = false;
+  if (analogRead(A0) < 970) lines[2][1] = false;
+  Serial.print(lineCount); Serial.print(" Left: "); Serial.print(analogRead(A1)); Serial.print(" -> "); Serial.print(lines[0][1]);
+  Serial.print(" Right: "); Serial.print(analogRead(A0)); Serial.print(" -> "); Serial.print(lines[2][1]);
+  Serial.print(" Back: "); Serial.print(analogRead(A2)); Serial.print(" -> "); Serial.println(lines[1][1]);
 
   //===PID Regulator===
   dt = millis() - prevTime;
@@ -97,7 +102,8 @@ void loop() {
   //===PID filter===
   if (PIDHAHA >= 20) PIDHAHA = 20;
   if (PIDHAHA < -20) PIDHAHA = -20;
-
+  lineCount = 3; //delete
+  PrevNoWallsTime = millis(); //delete
   //===switching the line-crossing===
   if (lineCount <= 2) {  //===just way or stones. No reason to up car's speed, because stones are small===
     servo.write(SERVO_ZERO + PIDHAHA);
@@ -108,9 +114,15 @@ void loop() {
     }
   }
   if (lineCount == 3) {  //===no walls===
-    if (lines[0][1] and !lines[2][1]) servo.write(SERVO_ZERO + 15);
-    if (!lines[0][1] and lines[2][1]) servo.write(SERVO_ZERO - 15);
+  if (millis() - PrevNoWallsTime <= 7000) {
+    if (lines[0][1] and !lines[2][1]) servo.write(SERVO_ZERO - 15);
+    if (!lines[0][1] and lines[2][1]) servo.write(SERVO_ZERO + 15);
     if (lines[0][1] and lines[2][1]) servo.write(SERVO_ZERO);
+    if (!lines[0][1] and !lines[2][1]) servo.write(SERVO_ZERO);
+  } 
+  if (millis() - PrevNoWallsTime > 7000) {
+    lineCount = 0;
+  }
     motor.write(98);
   }
   if (lineCount == 4) {  //===stop-line===
@@ -129,13 +141,16 @@ void loop() {
   }
 /*
   //счётчик линий
-  if (!lines[1][0] and lines[1][1]) {
+  if (!lines[0][0] and lines[0][1]) {
     if ((millis() - prevTimeLiners) > 400 and lineCount != 4) {
       lineCount = 1;  //обнуление счётчика. Давно не было линий, считаем заново.
     } else {
       lineCount++;
       if (lineCount == 4) {
         delay(50);  //важен делей, а не миллис. Машинка за это время должна уже задним датчиком коснуться четвёртой линии (не стоп линии)
+      }
+      if (lineCount == 3) {
+        PrevNoWallsTime = millis();  //важен делей, а не миллис. Машинка за это время должна уже задним датчиком коснуться четвёртой линии (не стоп линии)
       }
     }
     prevTimeLiners = millis();
